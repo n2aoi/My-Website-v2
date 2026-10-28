@@ -21,6 +21,8 @@
   --foreground:#fff;
   --muted:#8c8c8c;
   --line:#262626;
+  --accent:#4a4a4a;
+  --accent-soft:#171717;
   --font-figtree:"Figtree","Figtree Fallback";
   --font-fraunces:"Fraunces","Fraunces Fallback";
   color-scheme:dark;
@@ -107,11 +109,29 @@ html.js [data-hero]{
   html.js [data-m]{opacity:1;animation:none}
 }
 
+
+/* ---------- Projects / Work tabs ---------- */
+.tabs-section{margin-top:3rem}
+.tabs{display:flex;gap:1rem;margin-bottom:1.5rem;font-size:.875rem}
+.tabs a{position:relative;color:var(--muted);transition:color .15s}
+.tabs a:hover,.tabs a[aria-current=page]{color:var(--foreground)}
+.tabs a span{position:absolute;left:0;right:0;bottom:-.25rem;height:1px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .3s cubic-bezier(.26,1,.6,1)}
+.tabs a[aria-current=page] span{transform:scaleX(1)}
+.panel[hidden]{display:none}
+
+.entries{margin-inline:-.75rem;display:flex;flex-direction:column;gap:.25rem}
+.entries a{display:block;padding:.625rem .75rem;border-radius:.5rem}
+.e-title{display:block;color:var(--foreground)}
+.e-desc{display:block;margin-top:.125rem;font-size:.875rem;line-height:1.5;color:var(--muted)}
+
+.pillable{position:relative;isolation:isolate}
+.pill{position:absolute;top:0;left:0;z-index:-1;pointer-events:none;opacity:0;border-radius:.5rem;background:var(--accent-soft);border:1px solid var(--line);transition:opacity .15s ease-out;will-change:transform,width,height}
+
 /* ---------- Print ---------- */
 @media print{
   @page{size:A4;margin:10mm 15mm}
   body{background:#fff;color:#000}
   .page{max-width:none;padding:0}
   .handle,.about p{color:#444}
-  .grain,.social,.site-footer{display:none}
+  .grain,.social,.site-footer,.tabs{display:none}
 }

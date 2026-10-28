@@ -5,6 +5,10 @@
   const icons = [...document.querySelectorAll('[data-icon]')];
   const aboutItems = [...document.querySelectorAll('.about [data-m]')];
   const footer = document.querySelector('[data-footer]');
+  const tabs = [...document.querySelectorAll('[data-tab]')];
+  const panels = [...document.querySelectorAll('[data-panel]')];
+  let current = 0;
+  const panelItems = (i) => [...panels[i].querySelectorAll('.entries > li')];
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const EASE = 'cubic-bezier(.2,.65,.3,.9)';
@@ -24,17 +28,21 @@
       sub: 0.98,     // "ot9h"
       icons: 0.98,   // GitHub / Instagram
       about: 0.98,   // paragraph
-      footer: 0.98   // footer
+      footer: 0.98,  // footer
+      tabs: 0.98,    // projects / work tabs
+      panel: 0.98    // entries under the tabs
     },
     // gap between items of the same group (ms)
-    gap: { icons: 60, about: 60, letters: 50 },
+    gap: { icons: 60, about: 60, letters: 50, tabs: 60, panel: 80 },
 
     // HOW FAST each one animates once it has appeared: ms per fade.
     speed: {
       sub: 600,      // each "ot9h" letter
       icons: 700,
       about: 700,
-      footer: 700
+      footer: 700,
+      tabs: 700,
+      panel: 700
     },
 
     // look of the motion
@@ -184,13 +192,17 @@
   };
 
   /* ---------- Sequence ---------- */
-  const fired = { sub: false, icons: false, about: false, footer: false };
+  const fired = { sub: false, icons: false, about: false, tabs: false, panel: false, footer: false };
   const groups = {
     sub: () => sub && playLetters(sub),
     icons: () => icons.forEach((el, i) =>
       setTimeout(() => enter(el, OTHERS.speed.icons), OTHERS.gap.icons * i)),
     about: () => aboutItems.forEach((el, i) =>
       setTimeout(() => enter(el, OTHERS.speed.about), OTHERS.gap.about * i)),
+    tabs: () => tabs.forEach((el, i) =>
+      setTimeout(() => enter(el, OTHERS.speed.tabs), OTHERS.gap.tabs * i)),
+    panel: () => panelItems(current).forEach((el, i) =>
+      setTimeout(() => enter(el, OTHERS.speed.panel), OTHERS.gap.panel * i)),
     footer: () => footer && enter(footer, OTHERS.speed.footer)
   };
 
@@ -250,6 +262,79 @@
     }
     runHero();
   };
+
+  /* ---------- Tabs (projects / work) ---------- */
+  const show = (i) => {
+    if (i === current || !panels[i]) return;
+    current = i;
+    tabs.forEach((a, n) => {
+      if (n === i) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    panels.forEach((p, n) => { p.hidden = n !== i; });
+    panelItems(i).forEach((el, n) => {
+      el.setAttribute('data-m', '');
+      if (reduce) el.removeAttribute('data-m');
+      else setTimeout(() => enter(el, OTHERS.speed.panel), OTHERS.gap.panel * n);
+    });
+  };
+  tabs.forEach((a, i) => a.addEventListener('click', (e) => { e.preventDefault(); show(i); }));
+
+  // Sliding hover pill behind the entries.
+  const makePill = (ul) => {
+    ul.classList.add('pillable');
+    const el = document.createElement('div');
+    el.className = 'pill';
+    ul.prepend(el);
+    const keys = ['x', 'y', 'w', 'h'];
+    const s = { x: 0, y: 0, w: 0, h: 0 };
+    const v = { x: 0, y: 0, w: 0, h: 0 };
+    const t = { x: 0, y: 0, w: 0, h: 0 };
+    let shown = false, raf = 0, last = 0;
+    const paint = () => {
+      el.style.width = s.w + 'px';
+      el.style.height = s.h + 'px';
+      el.style.transform = `translate(${s.x}px,${s.y}px)`;
+    };
+    const step = (now) => {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      const n = Math.max(1, Math.ceil(dt / (1 / 240)));
+      const h = dt / n;
+      let moving = false;
+      for (let i = 0; i < n; i++) {
+        keys.forEach((k) => {
+          v[k] += (-400 * (s[k] - t[k]) - 30 * v[k]) * h;
+          s[k] += v[k] * h;
+        });
+      }
+      keys.forEach((k) => {
+        if (Math.abs(v[k]) > 0.05 || Math.abs(s[k] - t[k]) > 0.05) moving = true;
+      });
+      if (!moving) keys.forEach((k) => { s[k] = t[k]; v[k] = 0; });
+      paint();
+      raf = moving ? requestAnimationFrame(step) : 0;
+    };
+    const to = (a) => {
+      const ur = ul.getBoundingClientRect();
+      const r = a.getBoundingClientRect();
+      t.x = r.left - ur.left; t.y = r.top - ur.top; t.w = r.width; t.h = r.height;
+      if (!shown) {
+        keys.forEach((k) => { s[k] = t[k]; v[k] = 0; });
+        paint();
+        shown = true;
+        el.style.opacity = '1';
+        return;
+      }
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); }
+    };
+    ul.addEventListener('mouseover', (e) => {
+      const a = e.target.closest('a');
+      if (a && ul.contains(a)) to(a);
+    });
+    ul.addEventListener('mouseleave', () => { shown = false; el.style.opacity = '0'; });
+  };
+  document.querySelectorAll('.entries').forEach(makePill);
 
   if (sub) prepLetters(sub);
 
